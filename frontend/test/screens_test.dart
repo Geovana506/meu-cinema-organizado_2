@@ -716,14 +716,6 @@ void main() {
         }), pedido.method == 'POST' ? 201 : 200);
       });
       final repositorio = FilmeRepository(cliente: cliente);
-      final argumentos = {
-        'titulo': 'Oppenheimer',
-        'diretor': 'Christopher Nolan',
-        'ano': 2023,
-        'genero': 'Drama',
-        'duracaoMinutos': 180,
-        'assistido': false,
-      };
       final novo = await repositorio.criar(
         'tk-123',
         titulo: 'Oppenheimer',
@@ -744,12 +736,11 @@ void main() {
         assistido: true,
       );
       await repositorio.excluir('tk-123', 3);
-      expect(chamadas, ['/filmes/ POST', '/filmes/3 PATCH', '/filmes/3 DELETE']);
+      expect(chamadas, ['POST /filmes/', 'PATCH /filmes/3', 'DELETE /filmes/3']);
       expect(token, 'Bearer tk-123');
       expect(tipoConteudo, startsWith('application/json'));
       expect(novo.id, 3);
-      expect(atualizado.ano, 2023);
-      expect(argumentos['ano'], 2023);
+      expect(atualizado.ano, 2024);
     });
   });
 
