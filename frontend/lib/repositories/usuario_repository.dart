@@ -1,52 +1,66 @@
 import 'dart:convert';
-
 import 'package:http/http.dart' as http;
-
 import '../models/usuario.dart';
+
+const enderecoDaApi = 'http://127.0.0.1:8000';
+
+class RecusaDaApi implements Exception {
+  RecusaDaApi(this.status, this.mensagem);
+  final int status;
+  final String mensagem;
+  @override
+  String toString() => mensagem;
+}
 
 class UsuarioRepository {
   UsuarioRepository({http.Client? cliente}) : _cliente = cliente ?? http.Client();
-
   final http.Client _cliente;
 
-  // Chrome/Desktop: 127.0.0.1. Android Emulator: 10.0.2.2.
-  static const String baseUrl = 'http://127.0.0.1:8000';
-
   Future<String?> entrar(String email, String senha) async {
-    final response = await _cliente.post(
-      Uri.parse('$baseUrl/usuarios/login'),
+    final resposta = await _cliente.post(
+      Uri.parse('$enderecoDaApi/usuarios/login'),
       headers: {'Content-Type': 'application/x-www-form-urlencoded'},
       body: {'username': email, 'password': senha},
     );
-    if (response.statusCode != 200) return null;
-    final json = jsonDecode(response.body) as Map<String, dynamic>;
-    return json['access_token'] as String?;
+    if (resposta.statusCode != 200) return null;
+    final corpo = jsonDecode(resposta.body) as Map<String, dynamic>;
+    return corpo['access_token'] as String?;
   }
 
   Future<Usuario> cadastrar(String nome, String email, String senha) async {
-    final response = await _cliente.post(
-      Uri.parse('$baseUrl/usuarios/'),
+    final resposta = await _cliente.post(
+      Uri.parse('$enderecoDaApi/usuarios/'),
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode({'nome': nome, 'email': email, 'senha': senha}),
     );
-    final body = jsonDecode(response.body);
-    if (response.statusCode == 201) {
-      return Usuario.fromJson(body as Map<String, dynamic>);
+    if (resposta.statusCode != 201) {
+      throw RecusaDaApi(resposta.statusCode, _frase(resposta.body));
     }
-    final detalhe = body is Map<String, dynamic>
-        ? (body['detail']?.toString() ?? 'Não foi possível realizar o cadastro.')
-        : 'Não foi possível realizar o cadastro.';
-    throw Exception(detalhe);
+    return Usuario.fromJson(jsonDecode(resposta.body) as Map<String, dynamic>);
   }
 
   Future<Usuario> quemSouEu(String token) async {
-    final response = await _cliente.get(
-      Uri.parse('$baseUrl/usuarios/eu'),
+    final resposta = await _cliente.get(
+      Uri.parse('$enderecoDaApi/usuarios/eu'),
       headers: {'Authorization': 'Bearer $token'},
     );
-    if (response.statusCode != 200) {
-      throw Exception('Sua sessão expirou. Entre novamente.');
+    if (resposta.statusCode != 200) {
+      throw RecusaDaApi(resposta.statusCode, _frase(resposta.body));
     }
-    return Usuario.fromJson(jsonDecode(response.body) as Map<String, dynamic>);
+    return Usuario.fromJson(jsonDecode(resposta.body) as Map<String, dynamic>);
+  }
+
+  String _frase(String corpo) {
+    try {
+      final detalhe = (jsonDecode(corpo) as Map<String, dynamic>)['detail'];
+      if (detalhe is String) return detalhe;
+      if (detalhe is List && detalhe.isNotEmpty) {
+        final primeiro = detalhe.first as Map<String, dynamic>;
+        final local = primeiro['loc'];
+        final campo = local is List && local.isNotEmpty ? local.last : 'campo';
+        return '$campo: ${primeiro['msg'] ?? 'valor inválido'}';
+      }
+    } catch (_) {}
+    return 'A API recusou a solicitação.';
   }
 }
