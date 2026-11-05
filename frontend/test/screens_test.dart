@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:meu_cinema_organizado/main.dart';
 import 'package:meu_cinema_organizado/repositories/usuario_repository.dart';
@@ -19,6 +20,7 @@ import 'package:meu_cinema_organizado/services/sessao_service.dart';
 int pedidos = 0;
 
 SessaoService sessaoDeMentira() {
+  SharedPreferences.setMockInitialValues({});
   final cliente = MockClient((pedido) async {
     pedidos++;
     if (pedido.url.path == '/usuarios/login') {
@@ -43,6 +45,62 @@ SessaoService sessaoDeMentira() {
   });
 
   return SessaoService(UsuarioRepository(cliente: cliente));
+  test('entrar guarda o token no armazenamento local', () async {
+    final sessao = sessaoDeMentira();
+    await sessao.entrar('geovana@exemplo.com', 'segredo123');
+    final prefs = await SharedPreferences.getInstance();
+    expect(prefs.getString('token'), 'token-da-geovana');
+  });
+
+  test('restaurar recupera usuário quando o token guardado ainda vale', () async {
+    SharedPreferences.setMockInitialValues({'token': 'token-da-geovana'});
+    final sessao = SessaoService(UsuarioRepository(
+      cliente: MockClient((pedido) async {
+        expect(pedido.url.path, '/usuarios/eu');
+        expect(pedido.headers['Authorization'], 'Bearer token-da-geovana');
+        return http.Response(
+          jsonEncode({'id': 1, 'nome': 'Geovana', 'email': 'geovana@exemplo.com'}),
+          200,
+        );
+      }),
+    ));
+    await sessao.restaurar();
+    expect(sessao.logado, isTrue);
+    expect(sessao.usuario?.nome, 'Geovana');
+  });
+
+  test('restaurar apaga token recusado pela API', () async {
+    SharedPreferences.setMockInitialValues({'token': 'token-vencido'});
+    final sessao = SessaoService(UsuarioRepository(
+      cliente: MockClient((_) async =>
+        http.Response(jsonEncode({'detail': 'Token inválido'}), 401)),
+    ));
+    await sessao.restaurar();
+    final prefs = await SharedPreferences.getInstance();
+    expect(sessao.logado, isFalse);
+    expect(prefs.getString('token'), isNull);
+  });
+
+  test('restaurar preserva token se API estiver indisponível', () async {
+    SharedPreferences.setMockInitialValues({'token': 'token-da-geovana'});
+    final sessao = SessaoService(UsuarioRepository(
+      cliente: MockClient((_) async => throw Exception('sem conexão')),
+    ));
+    await sessao.restaurar();
+    final prefs = await SharedPreferences.getInstance();
+    expect(sessao.logado, isFalse);
+    expect(prefs.getString('token'), 'token-da-geovana');
+  });
+
+  test('sair remove o token persistido', () async {
+    SharedPreferences.setMockInitialValues({'token': 'token-da-geovana'});
+    final sessao = sessaoDeMentira();
+    await sessao.sair();
+    final prefs = await SharedPreferences.getInstance();
+    expect(prefs.getString('token'), isNull);
+    expect(sessao.logado, isFalse);
+  });
+
 }
 
 Widget appDeTeste(SessaoService sessao) {
