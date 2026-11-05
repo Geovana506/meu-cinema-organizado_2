@@ -127,7 +127,7 @@ Widget appDeTeste(
   http.Client? filmes,
 }) {
   final repositorio = FilmeRepository(
-    cliente: filmes ?? apiDeFilmes(corpo: []),
+    cliente: filmes ?? apiDeFilmes(),
   );
   return MultiProvider(
     providers: [
@@ -219,7 +219,8 @@ void main() {
       expect(find.byType(LoginScreen), findsWidgets);
     });
 
-    testWidgets('menu apresenta os dados da pessoa e abre o perfil', (tester) async {
+    testWidgets('menu apresenta os dados da pessoa e abre o perfil',
+        (tester) async {
       await tester.pumpWidget(appDeTeste(sessaoDeMentira()));
       await preencherEEntrar(tester);
       await tester.tap(find.byIcon(Icons.menu));
@@ -241,7 +242,8 @@ void main() {
       expect(find.byType(PerfilScreen), findsOneWidget);
     });
 
-    testWidgets('Sair apaga sessão e limpa o histórico de navegação', (tester) async {
+    testWidgets('Sair apaga sessão e limpa o histórico de navegação',
+        (tester) async {
       final sessao = sessaoDeMentira();
       await tester.pumpWidget(appDeTeste(sessao));
       await preencherEEntrar(tester);
@@ -274,7 +276,8 @@ void main() {
       expect(find.byType(LoginScreen), findsNothing);
     });
 
-    testWidgets('watch atualiza a interface quando a sessão muda', (tester) async {
+    testWidgets('watch atualiza a interface quando a sessão muda',
+        (tester) async {
       final sessao = sessaoDeMentira();
       await tester.pumpWidget(
         ChangeNotifierProvider.value(
@@ -309,7 +312,8 @@ void main() {
       );
     });
 
-    testWidgets('lista vazia apresenta a mensagem correspondente', (tester) async {
+    testWidgets('lista vazia apresenta a mensagem correspondente',
+        (tester) async {
       await entrarEAbrirFilmes(tester, filmes: apiDeFilmes(corpo: []));
       expect(find.text('Nenhum filme ainda.'), findsOneWidget);
       expect(find.byType(ListTile), findsNothing);
@@ -391,7 +395,7 @@ void main() {
           .pushNamed(AppRoutes.filme);
       await tester.pumpAndSettle();
       expect(find.byType(FilmeScreen), findsNothing);
-      expect(find.byType(FilmesScreen), findsNWidgets(2));
+      expect(find.byType(FilmesScreen), findsOneWidget);
     });
   });
 
