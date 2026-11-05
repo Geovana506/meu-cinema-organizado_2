@@ -707,7 +707,9 @@ void main() {
       final cliente = MockClient((pedido) async {
         chamadas.add('${pedido.method} ${pedido.url.path}');
         token = pedido.headers['Authorization'];
-        tipoConteudo = pedido.headers['Content-Type'];
+        if (pedido.method != 'DELETE') {
+          tipoConteudo = pedido.headers['Content-Type'];
+        }
         if (pedido.method == 'DELETE') return http.Response('', 204);
         final dados = jsonDecode(pedido.body) as Map<String, dynamic>;
         return http.Response(jsonEncode({
