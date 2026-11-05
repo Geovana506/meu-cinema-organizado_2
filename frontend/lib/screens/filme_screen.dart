@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../models/filme.dart';
+import '../routes.dart';
 import '../services/filme_service.dart';
 import '../widgets/app_drawer.dart';
 
@@ -16,6 +17,7 @@ class FilmeScreen extends StatefulWidget {
 
 class _FilmeScreenState extends State<FilmeScreen> {
   late Future<Filme> filme;
+  String? erro;
 
   @override
   void initState() {
@@ -25,8 +27,55 @@ class _FilmeScreenState extends State<FilmeScreen> {
 
   void tentarDeNovo() {
     setState(() {
+      erro = null;
       filme = context.read<FilmeService>().buscar(widget.filmeId);
     });
+  }
+
+  Future<void> editar(Filme item) async {
+    final salvou = await Navigator.pushNamed(
+      context,
+      AppRoutes.formulario,
+      arguments: item,
+    );
+    if (salvou == true && mounted) {
+      Navigator.pop(context, true);
+    }
+  }
+
+  Future<void> excluir(Filme item) async {
+    final certeza = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Excluir ${item.titulo}?'),
+        content: const Text(
+          'Tem certeza? O filme será removido do catálogo e não será possível desfazer.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancelar'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Excluir'),
+          ),
+        ],
+      ),
+    );
+
+    if (certeza != true || !mounted) return;
+
+    try {
+      await context.read<FilmeService>().excluir(item.id);
+    } on ErroDeFilmes catch (e) {
+      if (!mounted) return;
+      setState(() => erro = e.mensagem);
+      return;
+    }
+
+    if (!mounted) return;
+    Navigator.pop(context, true);
   }
 
   @override
@@ -66,6 +115,7 @@ class _FilmeScreenState extends State<FilmeScreen> {
               ),
             );
           }
+
           final item = snapshot.data!;
           return ListView(
             padding: const EdgeInsets.all(24),
@@ -89,6 +139,32 @@ class _FilmeScreenState extends State<FilmeScreen> {
                 rotulo: 'Situação',
                 valor: item.assistido ? 'Assistido' : 'Não assistido',
               ),
+              const SizedBox(height: 16),
+              Wrap(
+                alignment: WrapAlignment.center,
+                spacing: 12,
+                runSpacing: 12,
+                children: [
+                  FilledButton.icon(
+                    onPressed: () => editar(item),
+                    icon: const Icon(Icons.edit),
+                    label: const Text('Editar'),
+                  ),
+                  OutlinedButton.icon(
+                    onPressed: () => excluir(item),
+                    icon: const Icon(Icons.delete_outline),
+                    label: const Text('Excluir'),
+                  ),
+                ],
+              ),
+              if (erro != null) ...[
+                const SizedBox(height: 16),
+                Text(
+                  erro!,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(color: Colors.red),
+                ),
+              ],
             ],
           );
         },
