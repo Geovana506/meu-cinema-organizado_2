@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
+import '../routes.dart';
 import '../services/sessao_service.dart';
-import 'cadastro_screen.dart';
-import 'inicio_screen.dart';
 
 class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key, required this.sessao});
-  final SessaoService sessao;
+  const LoginScreen({super.key});
 
   @override
   State<LoginScreen> createState() => _LoginScreenState();
@@ -26,19 +25,25 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> entrar() async {
-    setState(() { carregando = true; erro = null; });
+    setState(() {
+      carregando = true;
+      erro = null;
+    });
+
     try {
-      await widget.sessao.entrar(email.text, senha.text);
-      if (!mounted) return;
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => InicioScreen(sessao: widget.sessao)),
-      );
+      await context.read<SessaoService>().entrar(email.text, senha.text);
     } on ErroDeLogin catch (e) {
-      if (mounted) setState(() => erro = e.mensagem);
-    } finally {
-      if (mounted) setState(() => carregando = false);
+      if (mounted) {
+        setState(() {
+          carregando = false;
+          erro = e.mensagem;
+        });
+      }
+      return;
     }
+
+    if (!mounted) return;
+    Navigator.pushReplacementNamed(context, AppRoutes.inicio);
   }
 
   @override
@@ -54,25 +59,50 @@ class _LoginScreenState extends State<LoginScreen> {
               children: [
                 const Icon(Icons.movie_creation_outlined, size: 64),
                 const SizedBox(height: 12),
-                Text('Meu Cinema Organizado', style: Theme.of(context).textTheme.headlineSmall),
-                const SizedBox(height: 28),
-                TextField(controller: email, keyboardType: TextInputType.emailAddress,
-                  decoration: const InputDecoration(labelText: 'E-mail', border: OutlineInputBorder())),
-                const SizedBox(height: 12),
-                TextField(controller: senha, obscureText: true,
-                  decoration: const InputDecoration(labelText: 'Senha', border: OutlineInputBorder())),
-                if (erro != null) Padding(
-                  padding: const EdgeInsets.only(top: 12),
-                  child: Text(erro!, style: const TextStyle(color: Colors.red)),
+                Text(
+                  'Meu Cinema Organizado',
+                  style: Theme.of(context).textTheme.headlineSmall,
                 ),
+                const SizedBox(height: 28),
+                TextField(
+                  controller: email,
+                  keyboardType: TextInputType.emailAddress,
+                  decoration: const InputDecoration(
+                    labelText: 'E-mail',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: senha,
+                  obscureText: true,
+                  decoration: const InputDecoration(
+                    labelText: 'Senha',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                if (erro != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 12),
+                    child: Text(
+                      erro!,
+                      style: const TextStyle(color: Colors.red),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
                 const SizedBox(height: 20),
-                SizedBox(width: double.infinity, child: FilledButton(
-                  onPressed: carregando ? null : entrar,
-                  child: carregando ? const CircularProgressIndicator() : const Text('Entrar'),
-                )),
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton(
+                    onPressed: carregando ? null : entrar,
+                    child: carregando
+                        ? const CircularProgressIndicator()
+                        : const Text('Entrar'),
+                  ),
+                ),
                 TextButton(
-                  onPressed: () => Navigator.push(context,
-                    MaterialPageRoute(builder: (_) => CadastroScreen(sessao: widget.sessao))),
+                  onPressed: () =>
+                      Navigator.pushNamed(context, AppRoutes.cadastro),
                   child: const Text('Criar uma conta'),
                 ),
               ],
