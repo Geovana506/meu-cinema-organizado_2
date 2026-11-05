@@ -103,3 +103,12 @@ A tela **Meus filmes** consulta `GET /filmes/` pelas camadas do aplicativo: `Fil
 Ao tocar em um filme, o aplicativo abre a rota `/filme` enviando apenas o identificador nos `arguments`. A tela de detalhe consulta novamente a API por `GET /filmes/{id}` e apresenta título, diretor, ano, gênero, duração e situação (assistido ou não assistido). Se a página for atualizada sem os argumentos de navegação, o aplicativo retorna à lista.
 
 **Observação sobre o escopo atual da API:** as rotas de filmes exigem autenticação, mas o modelo `Filme` ainda não possui relacionamento com o usuário. Portanto, neste estágio, a API retorna o catálogo compartilhado entre as contas autenticadas; ela ainda não filtra filmes por proprietário.
+
+
+## Encontro 12 — CRUD de filmes pelo aplicativo
+
+O aplicativo permite cadastrar, editar e excluir filmes pelas camadas `FilmesScreen`, `FilmeScreen`, `FormularioScreen`, `FilmeService` e `FilmeRepository`. O formulário único recebe título, diretor, ano, gênero, duração em minutos e situação de assistido; ele é reutilizado tanto para um novo cadastro quanto para a edição de um filme existente.
+
+O repositório envia o token JWT no cabeçalho `Authorization: Bearer` e usa `POST /filmes/` para criar, `PATCH /filmes/{id}` para atualizar e `DELETE /filmes/{id}` para excluir. A situação `assistido` é enviada como um campo do registro; ela não representa disponibilidade para empréstimo. O backend valida os campos e impede duplicidade de título e ano.
+
+O formulário também valida os campos antes de chamar a API: título, diretor e gênero são obrigatórios; o ano deve estar entre 1888 e 2100; a duração deve estar entre 1 e 1000 minutos. As recusas da API, como dados inválidos (422) ou filme duplicado (409), são apresentadas no próprio formulário. A exclusão pede confirmação em um diálogo. Depois de salvar ou excluir com sucesso, a navegação retorna um resultado `true`, e a listagem consulta os filmes novamente. Se a rota do formulário for aberta sem os argumentos de navegação (por exemplo, após F5), o app retorna à lista.
