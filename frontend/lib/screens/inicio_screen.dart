@@ -1,62 +1,42 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
-import '../models/usuario.dart';
+import '../routes.dart';
 import '../services/sessao_service.dart';
-import 'login_screen.dart';
+import '../widgets/app_drawer.dart';
 
-class InicioScreen extends StatefulWidget {
-  const InicioScreen({super.key, required this.sessao});
-  final SessaoService sessao;
-
-  @override
-  State<InicioScreen> createState() => _InicioScreenState();
-}
-
-class _InicioScreenState extends State<InicioScreen> {
-  late Future<Usuario> usuario;
-
-  @override
-  void initState() {
-    super.initState();
-    usuario = widget.sessao.usuarioLogado();
-  }
-
-  void sair() {
-    widget.sessao.sair();
-    Navigator.pushAndRemoveUntil(context,
-      MaterialPageRoute(builder: (_) => LoginScreen(sessao: widget.sessao)),
-      (_) => false);
-  }
+class InicioScreen extends StatelessWidget {
+  const InicioScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final usuario = context.watch<SessaoService>().usuario!;
+
     return Scaffold(
-      appBar: AppBar(title: const Text('Meu Cinema Organizado'),
-        actions: [IconButton(onPressed: sair, tooltip: 'Sair', icon: const Icon(Icons.logout))]),
-      body: Center(child: FutureBuilder<Usuario>(
-        future: usuario,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const CircularProgressIndicator();
-          }
-          if (snapshot.hasError) {
-            return Column(mainAxisSize: MainAxisSize.min, children: [
-              const Text('Não foi possível carregar sua conta.'),
-              const SizedBox(height: 12),
-              FilledButton(onPressed: sair, child: const Text('Voltar ao login')),
-            ]);
-          }
-          final pessoa = snapshot.data!;
-          return Column(mainAxisSize: MainAxisSize.min, children: [
-            const Icon(Icons.account_circle_outlined, size: 64),
-            const SizedBox(height: 12),
-            Text('Olá, ${pessoa.nome}!', style: Theme.of(context).textTheme.headlineSmall),
-            Text(pessoa.email),
-            const SizedBox(height: 12),
-            const Text('Login realizado com sucesso.'),
-          ]);
-        },
-      )),
+      appBar: AppBar(title: const Text('Início')),
+      drawer: const AppDrawer(),
+      body: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.waving_hand_outlined, size: 56),
+            const SizedBox(height: 16),
+            Text(
+              'Olá, ${usuario.nome}!',
+              style: Theme.of(context).textTheme.headlineSmall,
+            ),
+            const SizedBox(height: 8),
+            Text(usuario.email),
+            const SizedBox(height: 24),
+            FilledButton.icon(
+              onPressed: () =>
+                  Navigator.pushNamed(context, AppRoutes.filmes),
+              icon: const Icon(Icons.movie_outlined),
+              label: const Text('Ver meus filmes'),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
