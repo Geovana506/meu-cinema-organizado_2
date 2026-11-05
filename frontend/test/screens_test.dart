@@ -16,6 +16,7 @@ import 'package:meu_cinema_organizado/routes.dart';
 import 'package:meu_cinema_organizado/screens/cadastro_screen.dart';
 import 'package:meu_cinema_organizado/screens/filme_screen.dart';
 import 'package:meu_cinema_organizado/screens/filmes_screen.dart';
+import 'package:meu_cinema_organizado/screens/formulario_screen.dart';
 import 'package:meu_cinema_organizado/screens/inicio_screen.dart';
 import 'package:meu_cinema_organizado/screens/login_screen.dart';
 import 'package:meu_cinema_organizado/screens/perfil_screen.dart';
@@ -119,6 +120,65 @@ http.Client apiDeFilmes({
       );
     }
     return http.Response(jsonEncode({'detail': 'Rota não encontrada'}), 404);
+  });
+}
+
+
+http.Client acervoDeFilmes() {
+  final acervo = <Map<String, dynamic>>[
+    Map<String, dynamic>.from(doisFilmes[0]),
+    Map<String, dynamic>.from(doisFilmes[1]),
+  ];
+  return MockClient((pedido) async {
+    pedidos++;
+    if (pedido.headers['Authorization'] == null) {
+      return http.Response(jsonEncode({'detail': 'Not authenticated'}), 401);
+    }
+    if (pedido.url.path == '/filmes/' && pedido.method == 'GET') {
+      return http.Response(jsonEncode(acervo), 200);
+    }
+    if (pedido.url.path == '/filmes/' && pedido.method == 'POST') {
+      final dados = jsonDecode(pedido.body) as Map<String, dynamic>;
+      final repetido = acervo.any((f) =>
+          f['titulo'] == dados['titulo'] && f['ano'] == dados['ano']);
+      if (repetido) {
+        return http.Response(
+          jsonEncode({'detail': 'Já existe um filme com esse título e ano.'}),
+          409,
+        );
+      }
+      final novo = <String, dynamic>{'id': 3, ...dados};
+      acervo.add(novo);
+      return http.Response(jsonEncode(novo), 201);
+    }
+    final id = int.tryParse(pedido.url.pathSegments.last);
+    final indice = acervo.indexWhere((f) => f['id'] == id);
+    if (indice < 0) {
+      return http.Response(jsonEncode({'detail': 'Filme não encontrado.'}), 404);
+    }
+    if (pedido.method == 'GET') {
+      return http.Response(jsonEncode(acervo[indice]), 200);
+    }
+    if (pedido.method == 'PATCH') {
+      final dados = jsonDecode(pedido.body) as Map<String, dynamic>;
+      final repetido = acervo.any((f) =>
+          f['id'] != id &&
+          f['titulo'] == dados['titulo'] &&
+          f['ano'] == dados['ano']);
+      if (repetido) {
+        return http.Response(
+          jsonEncode({'detail': 'Já existe um filme com esse título e ano.'}),
+          409,
+        );
+      }
+      acervo[indice].addAll(dados);
+      return http.Response(jsonEncode(acervo[indice]), 200);
+    }
+    if (pedido.method == 'DELETE') {
+      acervo.removeAt(indice);
+      return http.Response('', 204);
+    }
+    return http.Response(jsonEncode({'detail': 'Método não permitido'}), 405);
   });
 }
 
@@ -526,4 +586,171 @@ void main() {
       expect(avisos, 2);
     });
   });
+  group('CRUD de filmes pelo aplicativo', () {
+    testWidgets('botão + abre formulário e cria filme na lista', (tester) async {
+      await entrarEAbrirFilmes(tester, filmes: acervoDeFilmes());
+      await tester.tap(find.byTooltip('Novo filme'));
+      await tester.pumpAndSettle();
+      expect(find.byType(FormularioScreen), findsOneWidget);
+      expect(find.text('Novo filme'), findsOneWidget);
+      await tester.enterText(find.byType(TextFormField).at(0), 'Oppenheimer');
+      await tester.enterText(find.byType(TextFormField).at(1), 'Christopher Nolan');
+      await tester.enterText(find.byType(TextFormField).at(2), '2023');
+      await tester.enterText(find.byType(TextFormField).at(3), 'Drama');
+      await tester.enterText(find.byType(TextFormField).at(4), '180');
+      await tester.tap(find.text('Salvar'));
+      await tester.pumpAndSettle();
+      expect(find.byType(FormularioScreen), findsNothing);
+      expect(find.text('Oppenheimer'), findsOneWidget);
+      expect(find.text('2023'), findsOneWidget);
+    });
+
+    testWidgets('validator impede envio com campos vazios e ano inválido',
+        (tester) async {
+      await entrarEAbrirFilmes(tester, filmes: acervoDeFilmes());
+      await tester.tap(find.byTooltip('Novo filme'));
+      await tester.pumpAndSettle();
+      pedidos = 0;
+      await tester.tap(find.text('Salvar'));
+      await tester.pump();
+      expect(find.text('Informe o título'), findsOneWidget);
+      expect(find.text('Informe o diretor'), findsOneWidget);
+      expect(find.text('Informe um ano válido, só com números'), findsOneWidget);
+      expect(find.text('Informe o gênero'), findsOneWidget);
+      expect(find.text('Informe uma duração entre 1 e 1000 minutos'), findsOneWidget);
+      expect(pedidos, 0);
+      await tester.enterText(find.byType(TextFormField).at(2), 'mil');
+      await tester.tap(find.text('Salvar'));
+      await tester.pump();
+      expect(find.text('Informe um ano válido, só com números'), findsOneWidget);
+      expect(pedidos, 0);
+    });
+
+    testWidgets('API recusa filme repetido e mantém formulário aberto',
+        (tester) async {
+      await entrarEAbrirFilmes(tester, filmes: acervoDeFilmes());
+      await tester.tap(find.byTooltip('Novo filme'));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(TextFormField).at(0), 'Interestelar');
+      await tester.enterText(find.byType(TextFormField).at(1), 'Christopher Nolan');
+      await tester.enterText(find.byType(TextFormField).at(2), '2014');
+      await tester.enterText(find.byType(TextFormField).at(3), 'Ficção Científica');
+      await tester.enterText(find.byType(TextFormField).at(4), '169');
+      await tester.tap(find.text('Salvar'));
+      await tester.pumpAndSettle();
+      expect(find.text('Já existe um filme com esse título e ano.'), findsOneWidget);
+      expect(find.byType(FormularioScreen), findsOneWidget);
+    });
+
+    testWidgets('Editar abre formulário preenchido e atualiza a lista',
+        (tester) async {
+      await entrarEAbrirFilmes(tester, filmes: acervoDeFilmes());
+      await tester.tap(find.text('Interestelar'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Editar'));
+      await tester.pumpAndSettle();
+      expect(find.text('Editar filme'), findsOneWidget);
+      expect(tester.widget<TextFormField>(find.byType(TextFormField).at(0))
+          .controller!.text, 'Interestelar');
+      expect(tester.widget<TextFormField>(find.byType(TextFormField).at(2))
+          .controller!.text, '2014');
+      await tester.enterText(find.byType(TextFormField).at(2), '2015');
+      await tester.tap(find.text('Salvar'));
+      await tester.pumpAndSettle();
+      expect(find.byType(FormularioScreen), findsNothing);
+      expect(find.byType(FilmeScreen), findsNothing);
+      expect(find.text('2015'), findsOneWidget);
+      expect(find.text('2014'), findsNothing);
+    });
+
+    testWidgets('Excluir pede confirmação; Cancelar mantém e Excluir remove',
+        (tester) async {
+      await entrarEAbrirFilmes(tester, filmes: acervoDeFilmes());
+      await tester.tap(find.text('Interestelar'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Excluir'));
+      await tester.pumpAndSettle();
+      expect(find.text('Excluir Interestelar?'), findsOneWidget);
+      await tester.tap(find.text('Cancelar'));
+      await tester.pumpAndSettle();
+      expect(find.byType(AlertDialog), findsNothing);
+      expect(find.byType(FilmeScreen), findsOneWidget);
+      await tester.tap(find.text('Excluir'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.descendant(
+        of: find.byType(AlertDialog),
+        matching: find.text('Excluir'),
+      ));
+      await tester.pumpAndSettle();
+      expect(find.byType(FilmeScreen), findsNothing);
+      expect(find.text('Interestelar'), findsNothing);
+      expect(find.text('O Poderoso Chefão'), findsOneWidget);
+    });
+
+    testWidgets('F5 no formulário sem arguments retorna à listagem',
+        (tester) async {
+      await entrarEAbrirFilmes(tester, filmes: acervoDeFilmes());
+      Navigator.of(tester.element(find.byType(FilmesScreen)))
+          .pushNamedAndRemoveUntil(AppRoutes.formulario, (rota) => false);
+      await tester.pumpAndSettle();
+      expect(find.byType(FormularioScreen), findsNothing);
+      expect(find.byType(FilmesScreen), findsOneWidget);
+      expect(find.text('Interestelar'), findsOneWidget);
+    });
+  });
+
+  group('Operações CRUD do repositório', () {
+    test('repository envia POST, PATCH e DELETE com token e JSON', () async {
+      final chamadas = <String>[];
+      String? token;
+      String? tipoConteudo;
+      final cliente = MockClient((pedido) async {
+        chamadas.add('${pedido.method} ${pedido.url.path}');
+        token = pedido.headers['Authorization'];
+        tipoConteudo = pedido.headers['Content-Type'];
+        if (pedido.method == 'DELETE') return http.Response('', 204);
+        final dados = jsonDecode(pedido.body) as Map<String, dynamic>;
+        return http.Response(jsonEncode({
+          'id': 3,
+          ...dados,
+        }), pedido.method == 'POST' ? 201 : 200);
+      });
+      final repositorio = FilmeRepository(cliente: cliente);
+      final argumentos = {
+        'titulo': 'Oppenheimer',
+        'diretor': 'Christopher Nolan',
+        'ano': 2023,
+        'genero': 'Drama',
+        'duracaoMinutos': 180,
+        'assistido': false,
+      };
+      final novo = await repositorio.criar(
+        'tk-123',
+        titulo: 'Oppenheimer',
+        diretor: 'Christopher Nolan',
+        ano: 2023,
+        genero: 'Drama',
+        duracaoMinutos: 180,
+        assistido: false,
+      );
+      final atualizado = await repositorio.atualizar(
+        'tk-123',
+        3,
+        titulo: 'Oppenheimer',
+        diretor: 'Christopher Nolan',
+        ano: 2024,
+        genero: 'Drama',
+        duracaoMinutos: 180,
+        assistido: true,
+      );
+      await repositorio.excluir('tk-123', 3);
+      expect(chamadas, ['/filmes/ POST', '/filmes/3 PATCH', '/filmes/3 DELETE']);
+      expect(token, 'Bearer tk-123');
+      expect(tipoConteudo, startsWith('application/json'));
+      expect(novo.id, 3);
+      expect(atualizado.ano, 2023);
+      expect(argumentos['ano'], 2023);
+    });
+  });
+
 }
