@@ -85,3 +85,12 @@ O cadastro do aplicativo chama `POST /usuarios/` pelo `UsuarioRepository`, com v
 O token JWT é guardado pelo `TokenRepository`, usando `shared_preferences` (no Chrome, o armazenamento local do navegador). Antes de abrir a primeira tela, o `main` chama `SessaoService.restaurar()`: se a API confirmar o token, a pessoa continua autenticada após F5 ou reinicialização. Se a API responder que o token não é válido, ele é apagado. Se a API estiver indisponível, o token é preservado para uma nova tentativa posterior.
 
 A opção **Sair** apaga o token do armazenamento local e da memória da aplicação. O token não é invalidado no servidor: uma cópia roubada continua válida até expirar ou ser rejeitada pela API; por isso, o app deve ser usado em dispositivo confiável.
+
+
+## Encontro 10 — cadastro e sessão persistente
+
+O cadastro do aplicativo chama `POST /usuarios/` pelo `UsuarioRepository`, com tratamento das recusas da API. Quando a conta é criada, o `SessaoService` reutiliza o fluxo de login e a pessoa já entra na tela inicial.
+
+O token JWT é guardado pelo `TokenRepository`, usando `shared_preferences` (no Chrome, o armazenamento local do navegador). Antes de abrir a primeira tela, o `main` chama `SessaoService.restaurar()`: se a API confirmar o token, a sessão é recuperada após F5 ou reinicialização. Se a API responder que o token não é válido, ele é apagado. Se a API estiver indisponível, o token é preservado, pois a falha de conexão não prova que ele venceu.
+
+A opção **Sair** apaga o token do armazenamento local e da memória do aplicativo. Ela não revoga o JWT no servidor: uma cópia do token ainda poderá ser usada até expirar ou ser rejeitada pela API. Por isso, use o app em um dispositivo confiável.
