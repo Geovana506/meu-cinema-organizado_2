@@ -71,11 +71,11 @@ flutter test
 - As telas internas passam por `RotaProtegida`; sem sessão, o aplicativo mostra o login.
 - A sessão (`SessaoService`) fica no topo da árvore de widgets com `ChangeNotifierProvider`. As telas usam `context.read` para executar ações e `context.watch` para acompanhar alterações.
 - O menu lateral apresenta o nome e o e-mail da pessoa autenticada, permite navegar entre Início, Filmes e Perfil e oferece a opção Sair.
-- O token permanece apenas na memória do aplicativo nesta etapa. Ao atualizar a página (F5) ou reiniciar o app, será necessário entrar novamente.
+- O token é persistido pelo `TokenRepository` com `shared_preferences` e restaurado pelo `SessaoService` ao iniciar o aplicativo.
 
 ## Regras do catálogo
 
-A situação `assistido` indica se a pessoa já viu o filme. Ela não representa disponibilidade para empréstimo. O sistema evita cadastrar filmes com o mesmo título e ano. A tela de filmes desta etapa é apenas um espaço reservado para a listagem que será desenvolvida nos próximos encontros.
+A situação `assistido` indica se a pessoa já viu o filme. Ela não representa disponibilidade para empréstimo. O sistema evita cadastrar filmes com o mesmo título e ano. A tela de filmes consulta o catálogo na API e permite cadastrar, editar e excluir registros; os detalhes do CRUD estão documentados na seção do Encontro 12.
 
 
 ## Encontro 10 — cadastro e sessão persistente
