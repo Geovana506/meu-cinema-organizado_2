@@ -28,11 +28,34 @@ class _FilmesScreenState extends State<FilmesScreen> {
     });
   }
 
+  Future<void> novoFilme() async {
+    final salvou = await Navigator.pushNamed(
+      context,
+      AppRoutes.formulario,
+      arguments: true,
+    );
+    if (salvou == true && mounted) tentarDeNovo();
+  }
+
+  Future<void> abrirFilme(int id) async {
+    final alterou = await Navigator.pushNamed(
+      context,
+      AppRoutes.filme,
+      arguments: id,
+    );
+    if (alterou == true && mounted) tentarDeNovo();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Meus filmes')),
       drawer: const AppDrawer(),
+      floatingActionButton: FloatingActionButton(
+        onPressed: novoFilme,
+        tooltip: 'Novo filme',
+        child: const Icon(Icons.add),
+      ),
       body: FutureBuilder<List<Filme>>(
         future: filmes,
         builder: (context, snapshot) {
@@ -86,11 +109,7 @@ class _FilmesScreenState extends State<FilmesScreen> {
                   filme.assistido ? Icons.check_circle : Icons.schedule,
                   semanticLabel: filme.assistido ? 'Assistido' : 'Não assistido',
                 ),
-                onTap: () => Navigator.pushNamed(
-                  context,
-                  AppRoutes.filme,
-                  arguments: filme.id,
-                ),
+                onTap: () => abrirFilme(filme.id),
               );
             },
           );
