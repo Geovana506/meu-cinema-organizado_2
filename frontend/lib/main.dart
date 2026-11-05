@@ -1,21 +1,38 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
+import 'repositories/filme_repository.dart';
 import 'repositories/token_repository.dart';
 import 'repositories/usuario_repository.dart';
 import 'routes.dart';
 import 'screens/cadastro_screen.dart';
+import 'screens/filme_screen.dart';
 import 'screens/filmes_screen.dart';
 import 'screens/inicio_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/perfil_screen.dart';
+import 'services/filme_service.dart';
 import 'services/sessao_service.dart';
 import 'widgets/rota_protegida.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  final sessao = SessaoService(UsuarioRepository(), tokens: TokenRepository());
+  final sessao = SessaoService(
+    UsuarioRepository(),
+    tokens: TokenRepository(),
+  );
   await sessao.restaurar();
-  runApp(ChangeNotifierProvider.value(value: sessao, child: const MeuCinemaApp()));
+
+  final filmes = FilmeService(FilmeRepository(), sessao);
+  runApp(
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider.value(value: sessao),
+        Provider<FilmeService>.value(value: filmes),
+      ],
+      child: const MeuCinemaApp(),
+    ),
+  );
 }
 
 class MeuCinemaApp extends StatelessWidget {
@@ -37,6 +54,23 @@ class MeuCinemaApp extends StatelessWidget {
         AppRoutes.inicio: (_) => const RotaProtegida(tela: InicioScreen()),
         AppRoutes.filmes: (_) => const RotaProtegida(tela: FilmesScreen()),
         AppRoutes.perfil: (_) => const RotaProtegida(tela: PerfilScreen()),
+      },
+      onGenerateRoute: (settings) {
+        if (settings.name == AppRoutes.filme) {
+          final id = settings.arguments;
+          if (id is int) {
+            return MaterialPageRoute<void>(
+              settings: settings,
+              builder: (_) => RotaProtegida(
+                tela: FilmeScreen(filmeId: id),
+              ),
+            );
+          }
+          return MaterialPageRoute<void>(
+            builder: (_) => const RotaProtegida(tela: FilmesScreen()),
+          );
+        }
+        return null;
       },
     );
   }
