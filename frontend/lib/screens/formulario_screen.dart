@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../models/filme.dart';
-import '../routes.dart';
 import '../services/filme_service.dart';
 import 'filmes_screen.dart';
 
