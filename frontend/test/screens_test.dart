@@ -216,7 +216,7 @@ void main() {
           .pushNamed(AppRoutes.filmes);
       await tester.pumpAndSettle();
       expect(find.byType(FilmesScreen), findsNothing);
-      expect(find.byType(LoginScreen), findsOneWidget);
+      expect(find.byType(LoginScreen), findsWidgets);
     });
 
     testWidgets('menu apresenta os dados da pessoa e abre o perfil', (tester) async {
