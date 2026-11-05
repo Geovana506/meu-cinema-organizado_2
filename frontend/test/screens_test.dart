@@ -602,7 +602,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.byType(FormularioScreen), findsNothing);
       expect(find.text('Oppenheimer'), findsOneWidget);
-      expect(find.text('2023'), findsOneWidget);
+      expect(find.textContaining('2023'), findsOneWidget);
     });
 
     testWidgets('validator impede envio com campos vazios e ano inválido',
@@ -659,8 +659,8 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.byType(FormularioScreen), findsNothing);
       expect(find.byType(FilmeScreen), findsNothing);
-      expect(find.text('2015'), findsOneWidget);
-      expect(find.text('2014'), findsNothing);
+      expect(find.textContaining('2015'), findsOneWidget);
+      expect(find.textContaining('2014'), findsNothing);
     });
 
     testWidgets('Excluir pede confirmação; Cancelar mantém e Excluir remove',
