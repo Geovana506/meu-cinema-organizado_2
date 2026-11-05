@@ -51,4 +51,75 @@ class FilmeService {
       );
     }
   }
+
+  Future<Filme> criar({
+    required String titulo,
+    required String diretor,
+    required int ano,
+    required String genero,
+    required int duracaoMinutos,
+    required bool assistido,
+  }) async {
+    try {
+      return await repositorio.criar(
+        _token,
+        titulo: titulo,
+        diretor: diretor,
+        ano: ano,
+        genero: genero,
+        duracaoMinutos: duracaoMinutos,
+        assistido: assistido,
+      );
+    } on RecusaDaApi catch (e) {
+      throw ErroDeFilmes(e.mensagem);
+    } catch (e) {
+      if (e is ErroDeFilmes) rethrow;
+      throw ErroDeFilmes(
+        'Não consegui falar com a API. O uvicorn está rodando?',
+      );
+    }
+  }
+
+  Future<Filme> atualizar(
+    int id, {
+    required String titulo,
+    required String diretor,
+    required int ano,
+    required String genero,
+    required int duracaoMinutos,
+    required bool assistido,
+  }) async {
+    try {
+      return await repositorio.atualizar(
+        _token,
+        id,
+        titulo: titulo,
+        diretor: diretor,
+        ano: ano,
+        genero: genero,
+        duracaoMinutos: duracaoMinutos,
+        assistido: assistido,
+      );
+    } on RecusaDaApi catch (e) {
+      throw ErroDeFilmes(e.mensagem);
+    } catch (e) {
+      if (e is ErroDeFilmes) rethrow;
+      throw ErroDeFilmes(
+        'Não consegui falar com a API. O uvicorn está rodando?',
+      );
+    }
+  }
+
+  Future<void> excluir(int id) async {
+    try {
+      await repositorio.excluir(_token, id);
+    } on RecusaDaApi catch (e) {
+      throw ErroDeFilmes(e.mensagem);
+    } catch (e) {
+      if (e is ErroDeFilmes) rethrow;
+      throw ErroDeFilmes(
+        'Não consegui falar com a API. O uvicorn está rodando?',
+      );
+    }
+  }
 }
