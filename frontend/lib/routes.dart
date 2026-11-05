@@ -4,5 +4,6 @@ class AppRoutes {
   static const cadastro = '/cadastro';
   static const inicio = '/inicio';
   static const filmes = '/filmes';
+  static const filme = '/filme';
   static const perfil = '/perfil';
 }
