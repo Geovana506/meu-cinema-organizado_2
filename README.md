@@ -5,7 +5,7 @@ Projeto acadêmico composto por uma API **FastAPI** e um aplicativo **Flutter** 
 ## Estrutura
 
 - `backend/`: API, banco SQLite, SQLAlchemy e autenticação JWT.
-- `frontend/`: aplicativo Flutter com cadastro, login e tela inicial autenticada.
+- `frontend/`: aplicativo Flutter com cadastro, login, navegação nomeada e sessão compartilhada com Provider.
 
 ## Backend
 
@@ -21,13 +21,14 @@ cp .env.example .env
 Edite o arquivo `.env` e substitua `SECRET_KEY` por uma chave aleatória longa (pelo menos 32 caracteres). Depois:
 
 ```bash
+poetry lock
 poetry install
 poetry run uvicorn app.main:app --reload
 ```
 
 A documentação interativa estará em http://127.0.0.1:8000/docs.
 
-O SQLite cria o arquivo `meu_cinema.db` dentro de `backend/`. Os quatro filmes que estavam no projeto inicial são inseridos automaticamente quando a tabela está vazia.
+O SQLite cria o arquivo `meu_cinema.db` dentro de `backend/`. Os quatro filmes iniciais são inseridos automaticamente quando a tabela está vazia.
 
 ## Frontend
 
@@ -54,11 +55,11 @@ Frontend:
 
 ```bash
 cd frontend
-flutter test
 flutter analyze
+flutter test
 ```
 
-## Autenticação
+## Autenticação e navegação
 
 - Cadastro: `POST /usuarios/`.
 - Login: `POST /usuarios/login`; o campo `username` recebe o e-mail.
@@ -66,8 +67,12 @@ flutter analyze
 - As rotas de filmes exigem token Bearer.
 - A senha é armazenada como hash bcrypt, nunca em texto puro.
 - O JWT expira em 60 minutos.
-- Nesta etapa, o token fica em memória no aplicativo; ao fechar o app será necessário entrar novamente.
+- As telas possuem nomes centralizados em `lib/routes.dart`; o `main.dart` associa cada rota à tela correspondente.
+- As telas internas passam por `RotaProtegida`; sem sessão, o aplicativo mostra o login.
+- A sessão (`SessaoService`) fica no topo da árvore de widgets com `ChangeNotifierProvider`. As telas usam `context.read` para executar ações e `context.watch` para acompanhar alterações.
+- O menu lateral apresenta o nome e o e-mail da pessoa autenticada, permite navegar entre Início, Filmes e Perfil e oferece a opção Sair.
+- O token permanece apenas na memória do aplicativo nesta etapa. Ao atualizar a página (F5) ou reiniciar o app, será necessário entrar novamente.
 
 ## Regras do catálogo
 
-A situação `assistido` indica se a pessoa já viu o filme. Ela não representa disponibilidade para empréstimo. O sistema evita cadastrar filmes com o mesmo título e ano.
+A situação `assistido` indica se a pessoa já viu o filme. Ela não representa disponibilidade para empréstimo. O sistema evita cadastrar filmes com o mesmo título e ano. A tela de filmes desta etapa é apenas um espaço reservado para a listagem que será desenvolvida nos próximos encontros.
