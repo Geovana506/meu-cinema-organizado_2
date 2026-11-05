@@ -5,11 +5,15 @@ import 'package:http/http.dart' as http;
 import '../models/usuario.dart';
 
 class UsuarioRepository {
-  // Para Chrome/Desktop: 127.0.0.1. Android Emulator: 10.0.2.2.
+  UsuarioRepository({http.Client? cliente}) : _cliente = cliente ?? http.Client();
+
+  final http.Client _cliente;
+
+  // Chrome/Desktop: 127.0.0.1. Android Emulator: 10.0.2.2.
   static const String baseUrl = 'http://127.0.0.1:8000';
 
   Future<String?> entrar(String email, String senha) async {
-    final response = await http.post(
+    final response = await _cliente.post(
       Uri.parse('$baseUrl/usuarios/login'),
       headers: {'Content-Type': 'application/x-www-form-urlencoded'},
       body: {'username': email, 'password': senha},
@@ -20,7 +24,7 @@ class UsuarioRepository {
   }
 
   Future<Usuario> cadastrar(String nome, String email, String senha) async {
-    final response = await http.post(
+    final response = await _cliente.post(
       Uri.parse('$baseUrl/usuarios/'),
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode({'nome': nome, 'email': email, 'senha': senha}),
@@ -36,7 +40,7 @@ class UsuarioRepository {
   }
 
   Future<Usuario> quemSouEu(String token) async {
-    final response = await http.get(
+    final response = await _cliente.get(
       Uri.parse('$baseUrl/usuarios/eu'),
       headers: {'Authorization': 'Bearer $token'},
     );
