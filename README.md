@@ -76,3 +76,12 @@ flutter test
 ## Regras do catálogo
 
 A situação `assistido` indica se a pessoa já viu o filme. Ela não representa disponibilidade para empréstimo. O sistema evita cadastrar filmes com o mesmo título e ano. A tela de filmes desta etapa é apenas um espaço reservado para a listagem que será desenvolvida nos próximos encontros.
+
+
+## Encontro 10 — cadastro e sessão persistente
+
+O cadastro do aplicativo chama `POST /usuarios/` pelo `UsuarioRepository`, com validações e tratamento das recusas da API. Quando a conta é criada, o app reutiliza o fluxo de login e já abre a tela inicial.
+
+O token JWT é guardado pelo `TokenRepository`, usando `shared_preferences` (no Chrome, o armazenamento local do navegador). Antes de abrir a primeira tela, o `main` chama `SessaoService.restaurar()`: se a API confirmar o token, a pessoa continua autenticada após F5 ou reinicialização. Se a API responder que o token não é válido, ele é apagado. Se a API estiver indisponível, o token é preservado para uma nova tentativa posterior.
+
+A opção **Sair** apaga o token do armazenamento local e da memória da aplicação. O token não é invalidado no servidor: uma cópia roubada continua válida até expirar ou ser rejeitada pela API; por isso, o app deve ser usado em dispositivo confiável.
