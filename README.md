@@ -94,3 +94,12 @@ O cadastro do aplicativo chama `POST /usuarios/` pelo `UsuarioRepository`, com t
 O token JWT é guardado pelo `TokenRepository`, usando `shared_preferences` (no Chrome, o armazenamento local do navegador). Antes de abrir a primeira tela, o `main` chama `SessaoService.restaurar()`: se a API confirmar o token, a sessão é recuperada após F5 ou reinicialização. Se a API responder que o token não é válido, ele é apagado. Se a API estiver indisponível, o token é preservado, pois a falha de conexão não prova que ele venceu.
 
 A opção **Sair** apaga o token do armazenamento local e da memória do aplicativo. Ela não revoga o JWT no servidor: uma cópia do token ainda poderá ser usada até expirar ou ser rejeitada pela API. Por isso, use o app em um dispositivo confiável.
+
+
+## Encontro 11 — listagem e detalhe dos filmes
+
+A tela **Meus filmes** consulta `GET /filmes/` pelas camadas do aplicativo: `FilmesScreen`, `FilmeService` e `FilmeRepository`. O repositório envia o token JWT no cabeçalho `Authorization: Bearer` e transforma cada registro recebido em um objeto `Filme`. A tela apresenta quatro estados: carregamento, erro com a opção **Tentar de novo**, lista vazia e lista de filmes em ordem alfabética.
+
+Ao tocar em um filme, o aplicativo abre a rota `/filme` enviando apenas o identificador nos `arguments`. A tela de detalhe consulta novamente a API por `GET /filmes/{id}` e apresenta título, diretor, ano, gênero, duração e situação (assistido ou não assistido). Se a página for atualizada sem os argumentos de navegação, o aplicativo retorna à lista.
+
+**Observação sobre o escopo atual da API:** as rotas de filmes exigem autenticação, mas o modelo `Filme` ainda não possui relacionamento com o usuário. Portanto, neste estágio, a API retorna o catálogo compartilhado entre as contas autenticadas; ela ainda não filtra filmes por proprietário.
