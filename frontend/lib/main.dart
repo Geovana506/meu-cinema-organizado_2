@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import 'models/filme.dart';
 import 'repositories/filme_repository.dart';
 import 'repositories/token_repository.dart';
 import 'repositories/usuario_repository.dart';
@@ -8,6 +9,7 @@ import 'routes.dart';
 import 'screens/cadastro_screen.dart';
 import 'screens/filme_screen.dart';
 import 'screens/filmes_screen.dart';
+import 'screens/formulario_screen.dart';
 import 'screens/inicio_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/perfil_screen.dart';
@@ -66,6 +68,23 @@ class MeuCinemaApp extends StatelessWidget {
               ),
             );
           }
+          return MaterialPageRoute<void>(
+            builder: (_) => const RotaProtegida(tela: FilmesScreen()),
+          );
+        }
+        if (settings.name == AppRoutes.formulario) {
+          final argumento = settings.arguments;
+          if (argumento == true || argumento is Filme) {
+            return MaterialPageRoute<bool>(
+              settings: settings,
+              builder: (_) => RotaProtegida(
+                tela: FormularioScreen(
+                  filme: argumento is Filme ? argumento : null,
+                ),
+              ),
+            );
+          }
+          // Sem arguments (por exemplo, após F5), não há contexto para editar.
           return MaterialPageRoute<void>(
             builder: (_) => const RotaProtegida(tela: FilmesScreen()),
           );
