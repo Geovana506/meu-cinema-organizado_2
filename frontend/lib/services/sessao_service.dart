@@ -1,41 +1,46 @@
+import 'package:flutter/foundation.dart';
+
 import '../models/usuario.dart';
 import '../repositories/usuario_repository.dart';
 
 class ErroDeLogin implements Exception {
   ErroDeLogin(this.mensagem);
   final String mensagem;
+
+  @override
+  String toString() => mensagem;
 }
 
-class SessaoService {
+// Estado compartilhado de autenticação. As telas observam este objeto
+// com Provider, sem receber SessaoService pelos construtores.
+class SessaoService extends ChangeNotifier {
   SessaoService(this.repository);
-  final UsuarioRepository repository;
-  String? _token;
 
-  bool get autenticado => _token != null;
+  final UsuarioRepository repository;
+
+  String? token;
+  Usuario? usuario;
+
+  bool get logado => token != null && usuario != null;
 
   Future<void> entrar(String email, String senha) async {
     if (email.trim().isEmpty || senha.isEmpty) {
       throw ErroDeLogin('Preencha o e-mail e a senha.');
     }
+
     try {
-      final token = await repository.entrar(email.trim(), senha);
-      if (token == null) throw ErroDeLogin('E-mail ou senha incorretos.');
-      _token = token;
+      final novoToken = await repository.entrar(email.trim(), senha);
+      if (novoToken == null) {
+        throw ErroDeLogin('E-mail ou senha incorretos.');
+      }
+      final usuarioAutenticado = await repository.quemSouEu(novoToken);
+      token = novoToken;
+      usuario = usuarioAutenticado;
+      notifyListeners();
     } on ErroDeLogin {
       rethrow;
     } catch (_) {
-      throw ErroDeLogin('Não foi possível conectar à API.');
-    }
-  }
-
-  Future<Usuario> usuarioLogado() async {
-    final token = _token;
-    if (token == null) throw ErroDeLogin('Faça login novamente.');
-    try {
-      return await repository.quemSouEu(token);
-    } catch (_) {
-      sair();
-      throw ErroDeLogin('Não foi possível validar sua sessão. Entre novamente.');
+      throw ErroDeLogin('Não foi possível conectar à API ou validar sua sessão.');
     }
   }
 
@@ -50,5 +55,9 @@ class SessaoService {
     }
   }
 
-  void sair() => _token = null;
+  void sair() {
+    token = null;
+    usuario = null;
+    notifyListeners();
+  }
 }
