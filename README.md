@@ -1,114 +1,87 @@
 # Meu Cinema Organizado
 
-Projeto acadêmico composto por uma API **FastAPI** e um aplicativo **Flutter** para organizar um catálogo pessoal de filmes.
+Aplicação acadêmica para organizar um catálogo pessoal de filmes. O repositório reúne a API FastAPI, o aplicativo Flutter desenvolvido nos encontros da disciplina e o protótipo visual original criado no Lovable.
+
+## Visão geral
+
+O **Lovable** é preservado como protótipo de referência. O **Flutter** continua sendo o frontend principal em desenvolvimento e consome a API FastAPI. As telas Flutter serão alinhadas gradualmente à experiência visual e aos fluxos definidos no protótipo, sem substituir a implementação Flutter.
 
 ## Estrutura
 
-- `backend/`: API, banco SQLite, SQLAlchemy e autenticação JWT.
-- `frontend/`: aplicativo Flutter com cadastro, login, navegação nomeada e sessão compartilhada com Provider.
+- `backend/`: API FastAPI, SQLite/SQLAlchemy, autenticação JWT e endpoints do catálogo.
+- `frontend/`: aplicativo Flutter, autenticação, sessão persistente, listagem, detalhes e CRUD.
+- `prototipo-lovable/`: código original React/TypeScript, preservado como referência visual e funcional.
+- `docs/`: documentação complementar e materiais dos encontros.
 
-## Backend
+## Tecnologias
 
-Requisitos: Python 3.11+ e Poetry.
+| Camada | Tecnologias |
+|---|---|
+| API | Python, FastAPI, SQLAlchemy, SQLite, JWT, bcrypt |
+| Aplicativo | Flutter, Dart, Provider, shared_preferences |
+| Protótipo | React, TypeScript, Vite, Tailwind CSS, shadcn/ui |
 
-Na primeira execução:
+## Funcionalidades implementadas no Flutter
 
-```bash
+- Cadastro e login de usuários.
+- Autenticação JWT e recuperação de sessão persistente.
+- Perfil e navegação protegida.
+- Listagem de filmes com estados de carregamento, erro e lista vazia.
+- Detalhamento de filme.
+- Cadastro, edição e exclusão com confirmação.
+- Testes automatizados de telas, serviços, repositórios, sessão e CRUD.
+
+> **Escopo atual da API:** as rotas de filmes exigem autenticação, mas o modelo `Filme` ainda não está relacionado a um usuário. Neste estágio, o catálogo é compartilhado entre as contas autenticadas.
+
+## Histórico dos encontros
+
+| Encontro | Conteúdo e entregas |
+|---|---|
+| 04 | Estrutura inicial do projeto e organização do backend/API. |
+| 05 | Configuração das dependências e execução da API FastAPI. |
+| 06 | Modelagem e persistência com SQLAlchemy e SQLite. |
+| 07 | Endpoints de filmes e documentação interativa da API. |
+| 08 | Organização das camadas e preparação da API para o aplicativo. |
+| 09 | Integração do Flutter com a API e fluxos de autenticação. |
+| 10 | Cadastro, JWT e sessão persistente com armazenamento local. |
+| 11 | Listagem e detalhe de filmes consumindo a API autenticada. |
+| 12 | CRUD de filmes: criar, editar e excluir, com validações e testes. |
+
+*O histórico resume a sequência registrada; os materiais da disciplina contêm os enunciados completos.*
+
+## Como executar
+
+### Backend
+
+```powershell
 cd backend
-cp .env.example .env
-```
-
-Edite o arquivo `.env` e substitua `SECRET_KEY` por uma chave aleatória longa (pelo menos 32 caracteres). Depois:
-
-```bash
-poetry lock
 poetry install
 poetry run uvicorn app.main:app --reload
 ```
 
-A documentação interativa estará em http://127.0.0.1:8000/docs.
+Documentação interativa: http://127.0.0.1:8000/docs
 
-O SQLite cria o arquivo `meu_cinema.db` dentro de `backend/`. Os quatro filmes iniciais são inseridos automaticamente quando a tabela está vazia.
+### Flutter
 
-## Frontend
+Com a API em execução, abra outro terminal:
 
-Requisitos: Flutter instalado e backend em execução na porta 8000.
-
-```bash
+```powershell
 cd frontend
 flutter pub get
 flutter run -d chrome
 ```
 
-Para Android Emulator, altere `baseUrl` em `lib/repositories/usuario_repository.dart` para `http://10.0.2.2:8000`. Em dispositivo físico, use o IP local do computador na mesma rede.
+Verificação e testes:
 
-## Testes
-
-Backend:
-
-```bash
-cd backend
-poetry run pytest
-```
-
-Frontend:
-
-```bash
-cd frontend
-flutter analyze
+```powershell
+flutter analyze lib
 flutter test
 ```
 
-## Autenticação e navegação
+### Protótipo Lovable
 
-- Cadastro: `POST /usuarios/`.
-- Login: `POST /usuarios/login`; o campo `username` recebe o e-mail.
-- Usuário autenticado: `GET /usuarios/eu`.
-- As rotas de filmes exigem token Bearer.
-- A senha é armazenada como hash bcrypt, nunca em texto puro.
-- O JWT expira em 60 minutos.
-- As telas possuem nomes centralizados em `lib/routes.dart`; o `main.dart` associa cada rota à tela correspondente.
-- As telas internas passam por `RotaProtegida`; sem sessão, o aplicativo mostra o login.
-- A sessão (`SessaoService`) fica no topo da árvore de widgets com `ChangeNotifierProvider`. As telas usam `context.read` para executar ações e `context.watch` para acompanhar alterações.
-- O menu lateral apresenta o nome e o e-mail da pessoa autenticada, permite navegar entre Início, Filmes e Perfil e oferece a opção Sair.
-- O token é persistido pelo `TokenRepository` com `shared_preferences` e restaurado pelo `SessaoService` ao iniciar o aplicativo.
+O protótipo utiliza React/TypeScript e dependências próprias. Deve permanecer em pasta separada: serve como referência visual e funcional, não substitui o Flutter nem o backend.
 
-## Regras do catálogo
+## Próxima etapa: integração visual
 
-A situação `assistido` indica se a pessoa já viu o filme. Ela não representa disponibilidade para empréstimo. O sistema evita cadastrar filmes com o mesmo título e ano. A tela de filmes consulta o catálogo na API e permite cadastrar, editar e excluir registros; os detalhes do CRUD estão documentados na seção do Encontro 12.
-
-
-## Encontro 10 — cadastro e sessão persistente
-
-O cadastro do aplicativo chama `POST /usuarios/` pelo `UsuarioRepository`, com validações e tratamento das recusas da API. Quando a conta é criada, o app reutiliza o fluxo de login e já abre a tela inicial.
-
-O token JWT é guardado pelo `TokenRepository`, usando `shared_preferences` (no Chrome, o armazenamento local do navegador). Antes de abrir a primeira tela, o `main` chama `SessaoService.restaurar()`: se a API confirmar o token, a pessoa continua autenticada após F5 ou reinicialização. Se a API responder que o token não é válido, ele é apagado. Se a API estiver indisponível, o token é preservado para uma nova tentativa posterior.
-
-A opção **Sair** apaga o token do armazenamento local e da memória da aplicação. O token não é invalidado no servidor: uma cópia roubada continua válida até expirar ou ser rejeitada pela API; por isso, o app deve ser usado em dispositivo confiável.
-
-
-## Encontro 10 — cadastro e sessão persistente
-
-O cadastro do aplicativo chama `POST /usuarios/` pelo `UsuarioRepository`, com tratamento das recusas da API. Quando a conta é criada, o `SessaoService` reutiliza o fluxo de login e a pessoa já entra na tela inicial.
-
-O token JWT é guardado pelo `TokenRepository`, usando `shared_preferences` (no Chrome, o armazenamento local do navegador). Antes de abrir a primeira tela, o `main` chama `SessaoService.restaurar()`: se a API confirmar o token, a sessão é recuperada após F5 ou reinicialização. Se a API responder que o token não é válido, ele é apagado. Se a API estiver indisponível, o token é preservado, pois a falha de conexão não prova que ele venceu.
-
-A opção **Sair** apaga o token do armazenamento local e da memória do aplicativo. Ela não revoga o JWT no servidor: uma cópia do token ainda poderá ser usada até expirar ou ser rejeitada pela API. Por isso, use o app em um dispositivo confiável.
-
-
-## Encontro 11 — listagem e detalhe dos filmes
-
-A tela **Meus filmes** consulta `GET /filmes/` pelas camadas do aplicativo: `FilmesScreen`, `FilmeService` e `FilmeRepository`. O repositório envia o token JWT no cabeçalho `Authorization: Bearer` e transforma cada registro recebido em um objeto `Filme`. A tela apresenta quatro estados: carregamento, erro com a opção **Tentar de novo**, lista vazia e lista de filmes em ordem alfabética.
-
-Ao tocar em um filme, o aplicativo abre a rota `/filme` enviando apenas o identificador nos `arguments`. A tela de detalhe consulta novamente a API por `GET /filmes/{id}` e apresenta título, diretor, ano, gênero, duração e situação (assistido ou não assistido). Se a página for atualizada sem os argumentos de navegação, o aplicativo retorna à lista.
-
-**Observação sobre o escopo atual da API:** as rotas de filmes exigem autenticação, mas o modelo `Filme` ainda não possui relacionamento com o usuário. Portanto, neste estágio, a API retorna o catálogo compartilhado entre as contas autenticadas; ela ainda não filtra filmes por proprietário.
-
-
-## Encontro 12 — CRUD de filmes pelo aplicativo
-
-O aplicativo permite cadastrar, editar e excluir filmes pelas camadas `FilmesScreen`, `FilmeScreen`, `FormularioScreen`, `FilmeService` e `FilmeRepository`. O formulário único recebe título, diretor, ano, gênero, duração em minutos e situação de assistido; ele é reutilizado tanto para um novo cadastro quanto para a edição de um filme existente.
-
-O repositório envia o token JWT no cabeçalho `Authorization: Bearer` e usa `POST /filmes/` para criar, `PATCH /filmes/{id}` para atualizar e `DELETE /filmes/{id}` para excluir. A situação `assistido` é enviada como um campo do registro; ela não representa disponibilidade para empréstimo. O backend valida os campos e impede duplicidade de título e ano.
-
-O formulário também valida os campos antes de chamar a API: título, diretor e gênero são obrigatórios; o ano deve estar entre 1888 e 2100; a duração deve estar entre 1 e 1000 minutos. As recusas da API, como dados inválidos (422) ou filme duplicado (409), são apresentadas no próprio formulário. A exclusão pede confirmação em um diálogo. Depois de salvar ou excluir com sucesso, a navegação retorna um resultado `true`, e a listagem consulta os filmes novamente. Se a rota do formulário for aberta sem os argumentos de navegação (por exemplo, após F5), o app retorna à lista.
+Ajustar progressivamente as telas Flutter com base no protótipo: identidade visual, hierarquia, formulários, filtros, estados vazios/erro/carregamento e navegação. A integração FastAPI e os testes existentes devem ser preservados.
